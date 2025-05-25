@@ -3,17 +3,10 @@
   "name": "Plex Screenshot Helper",
   "version": "1.0",
   "description": "一键截图并命名 Plex 画面",
-  "permissions": ["scripting", "tabs", "activeTab"],
+  "permissions": ["scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Plex Screenshot Helper"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ]
+  }
 }
