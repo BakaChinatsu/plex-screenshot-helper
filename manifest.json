@@ -8,5 +8,17 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "Plex Screenshot Helper"
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "commands": {
+    "take_screenshot": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Z",
+        "mac": "Command+Shift+Z"
+      },
+      "description": "截图并保存播放器画面"
+    }
   }
 }
