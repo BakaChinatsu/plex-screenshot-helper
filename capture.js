@@ -13,11 +13,11 @@
   // 生成截图用的文件名
   function getPlexScreenshotFilename() {
     const title =
-      document.querySelector(".PlayerControlsMetadata-container-aTRKIG > a")
+      document.querySelector("[class^='PlayerControlsMetadata-container'] a")
         ?.title || "未知作品";
     const episode =
-      document.querySelector(".MetadataPosterTitle-isSecondary-lJfKBu")
-        ?.innerText || "未知集数";
+      document.querySelector('[data-testid="metadataTitleLink"]')?.innerText ||
+      "未知集数";
     const video = document.querySelector("video");
     const currentTime = video ? formatTime(video.currentTime) : "未知时间";
 
