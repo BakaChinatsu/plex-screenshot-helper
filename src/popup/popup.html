@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Plex Screenshot Helper</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 10px;
+        width: 220px;
+      }
+      button {
+        width: 100%;
+        padding: 8px;
+        margin-top: 10px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>一键截图</h3>
+    <button id="captureBtn">获取播放信息</button>
+    <button id="capture">截屏并下载（Ctrl+Shift+Z）</button>
+    <p id="result"></p>
+    <script type="module" src="popup.ts"></script>
+  </body>
+</html>
