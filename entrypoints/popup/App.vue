@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import HelloWorld from "@/components/HelloWorld.vue";
-
 const getPlayInfo = async () => {
   console.log("开始获取播放信息");
   const [tab] = await browser.tabs.query({
@@ -53,12 +51,32 @@ function getPlexInfo() {
   const filename = `[${title}] - ${episode} - ${currentTime}.png`;
   alert("建议文件名：" + filename);
 }
+
+import { ref, onMounted } from "vue";
+const shortcut = ref<string | null>(null);
+
+onMounted(async () => {
+  try {
+    const commands = await browser.commands.getAll();
+    const captureCommand = commands.find(
+      (cmd) => cmd.name === "take_screenshot"
+    );
+    shortcut.value = captureCommand?.shortcut ?? null;
+  } catch (e) {
+    console.error("获取快捷键失败:", e);
+    shortcut.value = "加载失败";
+  }
+});
 </script>
 
 <template>
   <h3>一键截图</h3>
-  <button @click="getPlayInfo">获取播放信息</button>
-  <button @click="caputer">截屏并下载（Ctrl+Shift+Z）</button>
+  <p><button @click="getPlayInfo">获取播放信息</button></p>
+  <p>
+    <button @click="caputer">
+      截屏并下载（{{ shortcut || "快捷键未设置" }}）
+    </button>
+  </p>
   <p id="result"></p>
 </template>
 
