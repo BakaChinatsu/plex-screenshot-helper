@@ -31,8 +31,8 @@ export default defineConfig({
     commands: {
       take_screenshot: {
         suggested_key: {
-          default: "Ctrl+Shift+Z",
-          // mac: "Command+Shift+Z",
+          default: "Alt+Shift+Z",
+          // mac: "Option+Shift+Z",
         },
         description: "截图并保存播放器画面",
       },
