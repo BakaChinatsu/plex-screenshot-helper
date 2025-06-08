@@ -32,12 +32,19 @@ const caputer = async () => {
 function getPlexInfo() {
   const title =
     document.querySelector<HTMLElement>(
-      ".PlayerControlsMetadata-container-aTRKIG > a"
+      "[class^='PlayerControlsMetadata-container'] a"
     )?.title || "未知作品";
-  const episode =
-    document.querySelector<HTMLElement>(
-      ".MetadataPosterTitle-isSecondary-lJfKBu"
-    )?.innerText || "未知集数";
+  console.log("作品名:", title);
+  // 获取副标题
+  const container = document.querySelector<HTMLElement>(
+    '[class^="PlayerControlsMetadata-container"]'
+  );
+  const episodeElement = container?.querySelector<HTMLElement>(
+    '[class*="isSecondary"]'
+  );
+  const episode = episodeElement?.innerText?.trim() || "未知集数";
+  console.log("集数与副标题:", episode);
+
   const video = document.querySelector("video");
   const currentTime = video ? formatTime(video.currentTime) : "未知时间";
 
@@ -70,14 +77,14 @@ onMounted(async () => {
 </script>
 
 <template>
-  <h3>一键截图</h3>
+  <h3>Plex Player 一键截图</h3>
   <p><button @click="getPlayInfo">获取播放信息</button></p>
   <p>
     <button @click="caputer">
-      截屏并下载（{{ shortcut || "快捷键未设置" }}）
+      截图并下载（{{ shortcut || "快捷键未设置" }}）
     </button>
   </p>
-  <p id="result"></p>
+  <p>Tip: 可以在 <code>chrome://extensions/shortcuts</code> 中更改快捷键</p>
 </template>
 
 <style scoped>

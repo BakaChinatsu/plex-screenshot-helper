@@ -18,9 +18,16 @@ export default defineContentScript({
         document.querySelector<HTMLElement>(
           "[class^='PlayerControlsMetadata-container'] a"
         )?.title || "未知作品";
-      const episode =
-        document.querySelector<HTMLElement>('[data-testid="metadataTitleLink"]')
-          ?.innerText || "未知集数";
+      //   console.log("作品名:", title);
+      // 获取副标题
+      const container = document.querySelector<HTMLElement>(
+        '[class^="PlayerControlsMetadata-container"]'
+      );
+      const episodeElement = container?.querySelector<HTMLElement>(
+        '[class*="isSecondary"]'
+      );
+      const episode = episodeElement?.innerText?.trim() || "未知集数";
+      //   console.log("集数与副标题:", episode);
       const video = document.querySelector("video");
       const currentTime = video ? formatTime(video.currentTime) : "未知时间";
 
