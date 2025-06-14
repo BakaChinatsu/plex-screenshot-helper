@@ -45,9 +45,11 @@ function getPlexInfo() {
   const episode = episodeElement?.innerText?.trim() || "未知集数";
   console.log("集数与副标题:", episode);
 
+  // 选中视频元素并获取当前时间
   const video = document.querySelector("video");
   const currentTime = video ? formatTime(video.currentTime) : "未知时间";
 
+  // 格式化时间为 hh_mm_ss
   function formatTime(t: number) {
     const h = String(Math.floor(t / 3600)).padStart(2, "0");
     const m = String(Math.floor((t % 3600) / 60)).padStart(2, "0");
