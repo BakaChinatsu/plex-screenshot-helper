@@ -6,9 +6,8 @@ export default defineConfig({
   manifest: {
     manifest_version: 3,
     name: "Plex Screenshot Helper",
-    version: "1.0.1",
     description: "一键截图并命名 Plex 画面",
-    permissions: ["scripting", "activeTab"],
+    permissions: ["scripting", "activeTab", "storage"],
     host_permissions: ["<all_urls>"],
 
     action: {

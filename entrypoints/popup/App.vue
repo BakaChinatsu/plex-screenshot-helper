@@ -1,4 +1,10 @@
 <script lang="ts" setup>
+import { onMounted, ref, watch } from "vue";
+import { storage } from "#imports";
+
+const shortcut = ref<string | null>(null);
+const copyToClipboard = ref(false);
+
 const getPlayInfo = async () => {
   console.log("开始获取播放信息");
   const [tab] = await browser.tabs.query({
@@ -61,9 +67,7 @@ function getPlexInfo() {
   alert("建议文件名：" + filename);
 }
 
-import { ref, onMounted } from "vue";
-const shortcut = ref<string | null>(null);
-
+// 在组件挂载时获取快捷键和存储设置
 onMounted(async () => {
   try {
     const commands = await browser.commands.getAll();
@@ -75,6 +79,21 @@ onMounted(async () => {
     console.error("获取快捷键失败:", e);
     shortcut.value = "加载失败";
   }
+
+  // 从存储中读取设置
+  copyToClipboard.value = await storage.getItem("local:copyToClipboard", {
+    fallback: false,
+  });
+});
+
+// 监听 copyToClipboard 的变化并保存到存储
+watch(copyToClipboard, async (newValue) => {
+  try {
+    await storage.setItem("local:copyToClipboard", newValue);
+    console.log("设置已保存:", newValue);
+  } catch (e) {
+    console.error("保存设置失败:", e);
+  }
 });
 </script>
 
@@ -83,8 +102,10 @@ onMounted(async () => {
   <p><button @click="getPlayInfo">获取播放信息</button></p>
   <p>
     <button @click="caputer">
-      截图并下载（{{ shortcut || "快捷键未设置" }}）
-    </button>
+      截图并下载（{{ shortcut || "快捷键未设置" }}）</button
+    ><br />
+    <input type="checkbox" id="checkbox" v-model="copyToClipboard" />
+    <label for="checkbox">截图后复制至剪切板</label>
   </p>
   <p>Tip: 可以在 <code>chrome://extensions/shortcuts</code> 中更改快捷键</p>
 </template>
