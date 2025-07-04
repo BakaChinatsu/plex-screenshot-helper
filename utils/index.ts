@@ -40,6 +40,7 @@ export async function capture(tabId: number, filename: string) {
       const video = document.querySelector('video')
       console.log(video)
       if (!video) {
+        // eslint-disable-next-line no-alert
         alert('找不到视频播放器')
         return
       }
@@ -77,8 +78,25 @@ export async function capture(tabId: number, filename: string) {
             navigator.clipboard.write([
               new ClipboardItem({ [blob.type]: blob }),
             ])
-            // eslint-disable-next-line no-alert
-            alert('已复制到剪贴板，请在支持粘贴的应用中使用 Ctrl+V 粘贴截图')
+            // 使用 Notification API 替代 alert
+            if (window.Notification && Notification.permission !== 'denied') {
+              if (Notification.permission === 'granted') {
+                // eslint-disable-next-line no-new
+                new Notification('截图已复制到剪贴板', {
+                  body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
+                })
+              }
+              else {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === 'granted') {
+                    // eslint-disable-next-line no-new
+                    new Notification('截图已复制到剪贴板', {
+                      body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
+                    })
+                  }
+                })
+              }
+            }
           }
         }
       }, 'image/png')
