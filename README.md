@@ -22,8 +22,8 @@ e.g. `[ガールズバンドクライ] - シーズン1·第10話—ワンダー�
 
 ## Tips / 使用提示
 
-Default shortcut key is Alt+Shift+Z, MacOS is ⌥+⇧+Z
+Default shortcut key is Alt+Shift+Z, MacOS is ⌥+⇧+Z<br>
 You can change the shortcut in Chrome extensions settings (access via `chrome://extensions/shortcuts`)
 
-默认快捷键为 Alt+Shift+Z，MacOS 为 ⌥+⇧+Z
+默认快捷键为 Alt+Shift+Z，MacOS 为 ⌥+⇧+Z<br>
 可以在 Chrome 扩展设置中更改快捷键 (访问 `chrome://extensions/shortcuts`)

@@ -68,20 +68,32 @@ export async function capture(tabId: number, filename: string) {
         URL.revokeObjectURL(url)
 
         if (copyToClipboard) {
-          let clipboardPermission = true
-          if (isChrome) {
-            const permissionResult = await navigator.permissions.query({ name: 'clipboard-write' as PermissionName })
-            clipboardPermission = permissionResult.state === 'granted' || permissionResult.state === 'prompt'
-          }
+          try {
+            let clipboardPermission = true
+            if (isChrome) {
+              const permissionResult = await navigator.permissions.query({ name: 'clipboard-write' as PermissionName })
+              clipboardPermission = permissionResult.state === 'granted' || permissionResult.state === 'prompt'
+            }
 
-          if (clipboardPermission) {
-            navigator.clipboard.write([
+            if (!clipboardPermission) {
+              throw new Error('Clipboard permission denied')
+            }
+
+            console.log('Clipboard permission granted:', clipboardPermission)
+
+            if (!navigator.clipboard || !window.ClipboardItem) {
+              // 这里可以提示用户环境不支持剪贴板写入
+              throw new Error('当前环境不支持剪贴板写入（需要 HTTPS）')
+            }
+
+            console.log('Copying to clipboard...')
+            await navigator.clipboard.write([
               new ClipboardItem({ [blob.type]: blob }),
             ])
             // 使用 Notification API 替代 alert
             if (window.Notification && Notification.permission !== 'denied') {
               if (Notification.permission === 'granted') {
-                // eslint-disable-next-line no-new
+              // eslint-disable-next-line no-new
                 new Notification('截图已复制到剪贴板', {
                   body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
                 })
@@ -89,7 +101,7 @@ export async function capture(tabId: number, filename: string) {
               else {
                 Notification.requestPermission().then((permission) => {
                   if (permission === 'granted') {
-                    // eslint-disable-next-line no-new
+                  // eslint-disable-next-line no-new
                     new Notification('截图已复制到剪贴板', {
                       body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
                     })
@@ -97,6 +109,10 @@ export async function capture(tabId: number, filename: string) {
                 })
               }
             }
+          }
+          catch (e) {
+            console.error(e instanceof Error ? e.message : e)
+            // 可选：弹窗或 toast 提示
           }
         }
       }, 'image/png')
