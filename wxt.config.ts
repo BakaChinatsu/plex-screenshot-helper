@@ -12,7 +12,6 @@ export default defineConfig({
       'activeTab',
       'storage',
       'clipboardWrite',
-      'notifications',
     ],
     host_permissions: ['<all_urls>'],
 

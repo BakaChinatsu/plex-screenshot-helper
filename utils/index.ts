@@ -37,6 +37,25 @@ export async function capture(tabId: number, filename: string) {
   return browser.scripting.executeScript({
     target: { tabId },
     func: (filename: string, copyToClipboard: boolean, isChrome: boolean) => {
+      function showToast(msg: string) {
+        console.log('showToast called', msg)
+        // 创建一个简单的 toast 通知
+        const toast = document.createElement('div')
+        toast.textContent = msg
+        toast.style.cssText = `
+    position:fixed;top:32px;left:50%;transform:translateX(-50%);
+    background:#323232;color:#fff;padding:12px 24px;border-radius:6px;
+    font-size:16px;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    opacity:0;transition:opacity 0.3s;
+  `
+        document.body.appendChild(toast)
+        setTimeout(() => (toast.style.opacity = '1'), 10)
+        // 自动隐藏 toast
+        setTimeout(() => {
+          toast.style.opacity = '0'
+          setTimeout(() => toast.remove(), 300)
+        }, 2000)
+      }
       const video = document.querySelector('video')
       console.log(video)
       if (!video) {
@@ -76,43 +95,44 @@ export async function capture(tabId: number, filename: string) {
             }
 
             if (!clipboardPermission) {
-              throw new Error('Clipboard permission denied')
+              showToast('复制失败，请检查剪切板权限或当前环境是否为 HTTPS')
+              // throw new Error('Clipboard permission denied')
             }
 
             console.log('Clipboard permission granted:', clipboardPermission)
 
             if (!navigator.clipboard || !window.ClipboardItem) {
-              // 这里可以提示用户环境不支持剪贴板写入
-              throw new Error('当前环境不支持剪贴板写入（需要 HTTPS）')
+              showToast('复制失败，请检查当前环境是否为 HTTPS')
+              // throw new Error('当前环境不支持剪贴板写入（需要 HTTPS）')
             }
 
             console.log('Copying to clipboard...')
             await navigator.clipboard.write([
               new ClipboardItem({ [blob.type]: blob }),
             ])
+            showToast('截图已复制到剪贴板')
             // 使用 Notification API 替代 alert
-            if (window.Notification && Notification.permission !== 'denied') {
-              if (Notification.permission === 'granted') {
-              // eslint-disable-next-line no-new
-                new Notification('截图已复制到剪贴板', {
-                  body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
-                })
-              }
-              else {
-                Notification.requestPermission().then((permission) => {
-                  if (permission === 'granted') {
-                  // eslint-disable-next-line no-new
-                    new Notification('截图已复制到剪贴板', {
-                      body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
-                    })
-                  }
-                })
-              }
-            }
+            // if (window.Notification && Notification.permission !== 'denied') {
+            //   if (Notification.permission === 'granted') {
+            //   // eslint-disable-next-line no-new
+            //     new Notification('截图已复制到剪贴板', {
+            //       body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
+            //     })
+            //   }
+            //   else {
+            //     Notification.requestPermission().then((permission) => {
+            //       if (permission === 'granted') {
+            //       // eslint-disable-next-line no-new
+            //         new Notification('截图已复制到剪贴板', {
+            //           body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
+            //         })
+            //       }
+            //     })
+            //   }
+            // }
           }
           catch (e) {
             console.error(e instanceof Error ? e.message : e)
-            // 可选：弹窗或 toast 提示
           }
         }
       }, 'image/png')
