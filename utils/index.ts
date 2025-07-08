@@ -87,55 +87,43 @@ export async function capture(tabId: number, filename: string, imageType: string
         URL.revokeObjectURL(url)
 
         if (copyToClipboard) {
-          try {
-            let clipboardPermission = true
-            if (isChrome) {
-              const permissionResult = await navigator.permissions.query({ name: 'clipboard-write' as PermissionName })
-              clipboardPermission = permissionResult.state === 'granted' || permissionResult.state === 'prompt'
+          // 重新导出 PNG blob 用于剪贴板
+          canvas.toBlob(async (pngblob) => {
+            if (!pngblob) {
+              console.error('Failed to create blob from canvas for clipboard')
+              return
             }
+            try {
+              let clipboardPermission = true
+              if (isChrome) {
+                const permissionResult = await navigator.permissions.query({ name: 'clipboard-write' as PermissionName })
+                clipboardPermission = permissionResult.state === 'granted' || permissionResult.state === 'prompt'
+              }
 
-            if (!clipboardPermission) {
-              showToast('复制失败，请检查剪切板权限或当前环境是否为 HTTPS')
+              if (!clipboardPermission) {
+                showToast('复制失败，请检查剪切板权限或当前环境是否为 HTTPS')
               // throw new Error('Clipboard permission denied')
-            }
+              }
 
-            console.log('Clipboard permission granted:', clipboardPermission)
+              console.log('Clipboard permission granted:', clipboardPermission)
 
-            if (!navigator.clipboard || !window.ClipboardItem) {
-              showToast('复制失败，请检查当前环境是否为 HTTPS')
+              if (!navigator.clipboard || !window.ClipboardItem) {
+                showToast('复制失败，请检查当前环境是否为 HTTPS')
               // throw new Error('当前环境不支持剪贴板写入（需要 HTTPS）')
-            }
+              }
 
-            console.log('Copying to clipboard...')
-            await navigator.clipboard.write([
-              new ClipboardItem({ [blob.type]: blob }),
-            ])
-            showToast('截图已复制到剪贴板')
-            // 使用 Notification API 替代 alert
-            // if (window.Notification && Notification.permission !== 'denied') {
-            //   if (Notification.permission === 'granted') {
-            //   // eslint-disable-next-line no-new
-            //     new Notification('截图已复制到剪贴板', {
-            //       body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
-            //     })
-            //   }
-            //   else {
-            //     Notification.requestPermission().then((permission) => {
-            //       if (permission === 'granted') {
-            //       // eslint-disable-next-line no-new
-            //         new Notification('截图已复制到剪贴板', {
-            //           body: '请在支持粘贴的应用中使用 Ctrl+V 粘贴截图',
-            //         })
-            //       }
-            //     })
-            //   }
-            // }
-          }
-          catch (e) {
+              console.log('Copying to clipboard...')
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': pngblob }),
+              ])
+              showToast('截图已复制到剪贴板')
+            }
+            catch (e) {
             // console.error(e instanceof Error ? e.message : e)
-            const errormsg = e instanceof Error ? e.message : String(e)
-            showToast(`复制失败： ${errormsg}`)
-          }
+              const errormsg = e instanceof Error ? e.message : String(e)
+              showToast(`复制失败： ${errormsg}`)
+            }
+          }, 'image/png')
         }
       }, imageType)
     },
