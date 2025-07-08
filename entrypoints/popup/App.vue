@@ -5,6 +5,8 @@ import utils from '@/utils'
 
 const shortcut = ref<string | null>(null)
 const copyToClipboard = ref(false)
+const imageType = ref<string>('image/png')
+// const quality = ref<number>(100)
 
 async function getPlayInfo() {
   console.log('开始获取播放信息')
@@ -27,7 +29,7 @@ async function capture() {
   })
   if (tab.id) {
     const filename = await utils.getFilename(tab.id)
-    await utils.capture(tab.id, filename)
+    await utils.capture(tab.id, filename, imageType.value)
   }
 }
 
@@ -49,6 +51,9 @@ onMounted(async () => {
   copyToClipboard.value = await storage.getItem('local:copyToClipboard', {
     fallback: false,
   })
+  imageType.value = await storage.getItem('local:imageType', {
+    fallback: 'image/png',
+  })
 })
 
 // 监听 copyToClipboard 的变化并保存到存储
@@ -59,6 +64,17 @@ watch(copyToClipboard, async (newValue) => {
   }
   catch (e) {
     console.error('保存设置失败:', e)
+  }
+})
+// 监听 imageType 的变化并保存到存储
+watch(imageType, async (newValue) => {
+  try {
+    await storage.setItem('local:imageType', newValue)
+    console.log('图片类型已保存:', newValue)
+    console.log('imageType.value:', imageType.value, typeof imageType.value)
+  }
+  catch (e) {
+    console.error('保存图片类型失败:', e)
   }
 })
 </script>
@@ -78,6 +94,14 @@ watch(copyToClipboard, async (newValue) => {
     <label for="checkbox">截图后复制至剪切板</label>
   </p>
   <p>Tip: 可以在 <code>chrome://extensions/shortcuts</code> 中更改快捷键</p>
+  <div>ImageType: {{ imageType }}</div>
+
+  <input id="png" v-model="imageType" type="radio" value="image/png">
+  <label for="png">PNG</label>
+  <input id="jpeg" v-model="imageType" type="radio" value="image/jpeg">
+  <label for="jpeg">JPEG</label>
+  <input id="webp" v-model="imageType" type="radio" value="image/webp">
+  <label for="webp">WEBP</label>
 </template>
 
 <style scoped>

@@ -23,12 +23,12 @@ export async function getFilename(tabId: number) {
       const video = document.querySelector('video')
       const currentTime = video ? formatTime(video.currentTime) : '未知时间'
 
-      return `[${title}] - ${episode} - ${currentTime}.png`
+      return `[${title}] - ${episode} - ${currentTime}`
     },
   }))[0].result!
 }
 
-export async function capture(tabId: number, filename: string) {
+export async function capture(tabId: number, filename: string, imageType: string) {
   const copyToClipboard = await storage.getItem('local:copyToClipboard', {
     fallback: false,
   })
@@ -36,7 +36,7 @@ export async function capture(tabId: number, filename: string) {
 
   return browser.scripting.executeScript({
     target: { tabId },
-    func: (filename: string, copyToClipboard: boolean, isChrome: boolean) => {
+    func: (filename: string, copyToClipboard: boolean, isChrome: boolean, imageType: string) => {
       function showToast(msg: string) {
         console.log('showToast called', msg)
         // 创建一个简单的 toast 通知
@@ -132,12 +132,14 @@ export async function capture(tabId: number, filename: string) {
             // }
           }
           catch (e) {
-            console.error(e instanceof Error ? e.message : e)
+            // console.error(e instanceof Error ? e.message : e)
+            const errormsg = e instanceof Error ? e.message : String(e)
+            showToast(`复制失败： ${errormsg}`)
           }
         }
-      }, 'image/png')
+      }, imageType)
     },
-    args: [filename, copyToClipboard, isChrome],
+    args: [filename, copyToClipboard, isChrome, imageType],
   })
 }
 
