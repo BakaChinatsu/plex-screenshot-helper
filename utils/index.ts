@@ -34,6 +34,18 @@ export async function capture(tabId: number, filename: string) {
     fallback: false,
   })
   const imageType = await storage.getItem('local:imageType', { fallback: 'image/png' })
+  let extension
+  switch (imageType) {
+    case 'image/jpeg':
+      extension = 'jpg'
+      break
+    case 'image/webp':
+      extension = 'webp'
+      break
+    default:
+      extension = 'png'
+      break
+  }
 
   console.log('copyToClipboard', copyToClipboard, 'type:', typeof copyToClipboard)
   const imageQuality = await storage.getItem('local:imageQuality', { fallback: 0.95 })
@@ -93,7 +105,7 @@ export async function capture(tabId: number, filename: string) {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = filename
+        a.download = `${filename}.${extension}`
         a.click()
         URL.revokeObjectURL(url)
 
