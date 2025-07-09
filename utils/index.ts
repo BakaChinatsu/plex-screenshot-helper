@@ -22,6 +22,7 @@ export async function getFilename(tabId: number) {
       const episode = episodeElement?.textContent?.trim() || '-'
       // console.log("集数与副标题:", episode);
       const video = document.querySelector('video')
+        || document.querySelector('mux-player')?.shadowRoot?.querySelector('mux-video')?.shadowRoot?.querySelector('video')
       const currentTime = video ? formatTime(video.currentTime) : '未知时间'
 
       return `[${title}] - ${episode} - ${currentTime}`
@@ -68,6 +69,7 @@ export async function capture(tabId: number, filename: string) {
         }, 2000)
       }
       const video = document.querySelector('video')
+        || document.querySelector('mux-player')?.shadowRoot?.querySelector('mux-video')?.shadowRoot?.querySelector('video')
       console.log(video)
       if (!video) {
         // eslint-disable-next-line no-alert
