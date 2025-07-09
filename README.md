@@ -20,13 +20,17 @@ e.g.
 - Capture video frame directly from the Plex player
 - Automatically name the file as `[Title] - [Season·Episode]-[Episode title] - [Timestamp].png`
 - Works via button click or keyboard shortcut
-- Supports copying the screenshot to clipboard(Optional, requires HTTPS environment)
-- Displays Toast notifications on success or failure of clipboard copy
+- Supports selecting the image format for download (PNG, JPEG, WEBP)
+- Supports setting screenshot quality (only for JPEG and WEBP formats)
+- Supports copying the screenshot to clipboard (optional, due to browser API limitations，requires HTTPS environment, and always copies as PNG regardless of image type setting)
+- Show Toast notifications on success or failure of clipboard copy
 
 - 直接从 Plex 播放器截取视频画面
 - 自动命名截图文件为 `[作品名] - [第几季·第几集]-[本集标题] - [时间戳].png`
 - 支持点击按钮或快捷键触发截图
-- 支持复制截图到剪贴板(可选，需要 HTTPS 环境)
+- 支持选择下载图片的类型（支持 PNG、JPEG 和 WEBP）
+- 支持设置截图质量（仅适用于 JPEG 和 WEBP 格式）
+- 支持复制截图到剪贴板(可选，由于浏览器 API 限制需要 HTTPS 环境，且无论图片类型设置如何都以 PNG 格式复制)
 - 复制至剪切板成功或失败时显示 Toast 提示
 
 ## Tips / 使用提示

@@ -9,7 +9,8 @@ export async function getFilename(tabId: number) {
         return `${h}_${m}_${s}`
       }
 
-      const title = document.querySelector<HTMLElement>('[class^=\'PlayerControlsMetadata-container\'] a')?.title || '未知作品'
+      const title = document.querySelector<HTMLElement>('[class^=\'PlayerControlsMetadata-container\'] a')?.title || document.querySelector<HTMLElement>('title')?.textContent
+        || '未知作品'
       // console.log("作品名:", title);
       // 获取副标题
       const container = document.querySelector<HTMLElement>(
@@ -18,7 +19,7 @@ export async function getFilename(tabId: number) {
       const episodeElement = container?.querySelector<HTMLElement>(
         '[class*="isSecondary"]',
       )
-      const episode = episodeElement?.textContent?.trim() || '未知集数'
+      const episode = episodeElement?.textContent?.trim() || '-'
       // console.log("集数与副标题:", episode);
       const video = document.querySelector('video')
       const currentTime = video ? formatTime(video.currentTime) : '未知时间'
