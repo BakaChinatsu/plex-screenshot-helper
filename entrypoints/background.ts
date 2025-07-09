@@ -11,9 +11,8 @@ export default defineBackground(() => {
       })
       if (tab.id) {
         const filename = await utils.getFilename(tab.id)
-        const imageType = await storage.getItem('local:imageType', { fallback: 'image/png' })
 
-        await utils.capture(tab.id, filename, imageType)
+        await utils.capture(tab.id, filename)
       }
     }
   })

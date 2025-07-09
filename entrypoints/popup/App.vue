@@ -6,7 +6,7 @@ import utils from '@/utils'
 const shortcut = ref<string | null>(null)
 const copyToClipboard = ref(false)
 const imageType = ref<string>('image/png')
-// const quality = ref<number>(100)
+const imageQuality = ref<string>('0.95')
 
 async function getPlayInfo() {
   console.log('开始获取播放信息')
@@ -29,7 +29,7 @@ async function capture() {
   })
   if (tab.id) {
     const filename = await utils.getFilename(tab.id)
-    await utils.capture(tab.id, filename, imageType.value)
+    await utils.capture(tab.id, filename)
   }
 }
 
@@ -54,6 +54,9 @@ onMounted(async () => {
   imageType.value = await storage.getItem('local:imageType', {
     fallback: 'image/png',
   })
+  imageQuality.value = String(await storage.getItem<number>('local:imageQuality', {
+    fallback: 1,
+  }))
 })
 
 // 监听 copyToClipboard 的变化并保存到存储
@@ -71,10 +74,21 @@ watch(imageType, async (newValue) => {
   try {
     await storage.setItem('local:imageType', newValue)
     console.log('图片类型已保存:', newValue)
-    console.log('imageType.value:', imageType.value, typeof imageType.value)
+    // console.log('imageType.value:', imageType.value, typeof imageType.value)
   }
   catch (e) {
     console.error('保存图片类型失败:', e)
+  }
+})
+// 监听 imageQuality 的变化并保存到存储
+watch(imageQuality, async (newValue) => {
+  try {
+    console.log('imageQuality.value123:', newValue, typeof newValue)
+    await storage.setItem<number>('local:imageQuality', Number(newValue))
+    console.log('图片质量已保存:', newValue)
+  }
+  catch (e) {
+    console.error('保存图片质量失败:', e)
   }
 })
 </script>
@@ -94,7 +108,7 @@ watch(imageType, async (newValue) => {
     <label for="checkbox">截图后复制至剪切板</label>
   </p>
   <p>Tip: 可以在 <code>chrome://extensions/shortcuts</code> 中更改快捷键</p>
-  <div>ImageType: {{ imageType }}</div>
+  <div>Image Type: {{ imageType }}</div>
 
   <input id="png" v-model="imageType" type="radio" value="image/png">
   <label for="png">PNG</label>
@@ -102,6 +116,9 @@ watch(imageType, async (newValue) => {
   <label for="jpeg">JPEG</label>
   <input id="webp" v-model="imageType" type="radio" value="image/webp">
   <label for="webp">WEBP</label>
+
+  <div>Image Quality: {{ imageQuality }}</div>
+  <input v-model="imageQuality" type="range" min="0" max="1" step="0.1">
 </template>
 
 <style scoped>

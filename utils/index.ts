@@ -28,15 +28,25 @@ export async function getFilename(tabId: number) {
   }))[0].result!
 }
 
-export async function capture(tabId: number, filename: string, imageType: string) {
+export async function capture(tabId: number, filename: string) {
   const copyToClipboard = await storage.getItem('local:copyToClipboard', {
     fallback: false,
   })
+  const imageType = await storage.getItem('local:imageType', { fallback: 'image/png' })
+
+  console.log('copyToClipboard', copyToClipboard, 'type:', typeof copyToClipboard)
+  const imageQuality = await storage.getItem('local:imageQuality', { fallback: 0.95 })
+  console.log('imageQuality', imageQuality, 'type:', typeof imageQuality)
+  // const imageQuality = 0.1
   const isChrome = import.meta.env.CHROME
 
   return browser.scripting.executeScript({
     target: { tabId },
-    func: (filename: string, copyToClipboard: boolean, isChrome: boolean, imageType: string) => {
+    func: (filename: string, copyToClipboard: boolean, isChrome: boolean, imageType: string, imageQuality: number) => {
+      console.log('imageType', imageType)
+
+      console.log('imageQuality', imageQuality)
+
       function showToast(msg: string) {
         console.log('showToast called', msg)
         // 创建一个简单的 toast 通知
@@ -125,9 +135,9 @@ export async function capture(tabId: number, filename: string, imageType: string
             }
           }, 'image/png')
         }
-      }, imageType)
+      }, imageType, imageQuality)
     },
-    args: [filename, copyToClipboard, isChrome, imageType],
+    args: [filename, copyToClipboard, isChrome, imageType, imageQuality],
   })
 }
 
