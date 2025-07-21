@@ -25,7 +25,7 @@ e.g.
 - Supports setting screenshot quality (only for JPEG and WEBP formats)
 - Supports copying the screenshot to clipboard (optional, due to browser API limitations，requires HTTPS environment, and always copies as PNG regardless of image type setting)
 - Show Toast notifications on success or failure of clipboard copy
-- Now supports more video player pages (like YouTube, bilibili, mux player (#4), etc.), automatically using the current page title and timestamp as the filename
+- Now supports more video player pages (like YouTube, bilibili, mux player ([#4](https://github.com/BakaChinatsu/plex-screenshot-helper/pull/4)), etc.), automatically using the current page title and timestamp as the filename
 
 - 直接从 Plex 播放器截取视频画面
 - 自动命名截图文件为 `[作品名] - [第几季·第几集]-[本集标题] - [时间戳].png`
@@ -34,7 +34,7 @@ e.g.
 - 支持设置截图质量（仅适用于 JPEG 和 WEBP 格式）
 - 支持复制截图到剪贴板(可选，由于浏览器 API 限制需要 HTTPS 环境，且无论图片类型设置如何都以 PNG 格式复制)
 - 复制至剪切板成功或失败时显示 Toast 提示
-- 现在支持更多视频播放器页面的截图（如 YouTube, bilibili，mux player(#4) 等），会自动使用当前页面标题和时间戳作为文件名
+- 现在支持更多视频播放器页面的截图（如 YouTube, bilibili, mux player ([#4](https://github.com/BakaChinatsu/plex-screenshot-helper/pull/4)) 等），会自动使用当前页面标题和时间戳作为文件名
 
 ## Tips / 使用提示
 
