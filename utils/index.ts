@@ -56,7 +56,7 @@ export async function capture(tabId: number, filename: string) {
 
   return browser.scripting.executeScript({
     target: { tabId },
-    func: (filename: string, copyToClipboard: boolean, isChrome: boolean, imageType: string, imageQuality: number) => {
+    func: (filename: string, copyToClipboard: boolean, isChrome: boolean, imageType: string, imageQuality: number, extension: string) => {
       console.log('imageType', imageType)
 
       console.log('imageQuality', imageQuality)
@@ -152,7 +152,7 @@ export async function capture(tabId: number, filename: string) {
         }
       }, imageType, imageQuality)
     },
-    args: [filename, copyToClipboard, isChrome, imageType, imageQuality],
+    args: [filename, copyToClipboard, isChrome, imageType, imageQuality, extension],
   })
 }
 
