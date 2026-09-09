@@ -10,7 +10,7 @@ e.g.
 [ガールズバンドクライ] - シーズン1·第2話—夜行性の生き物3匹 - 00_18_36.png
 [転生王女と天才令嬢の魔法革命] - 第1季·第2集—趣味と実益の助手獲得 - 00_05_47.png
 [負けヒロインが多すぎる!] - S1·E1—プロ幼馴染み八奈見杏菜の負けっぷり - 00_05_27.png
-[【original anime MV】幽霊船戦【hololive_宝鐘マリン】 - YouTube] - - - 00_01_05.webp
+[【original anime MV】幽霊船戦【hololive_宝鐘マリン】 - YouTube] - 00_01_05.webp
 
 ```
 
@@ -26,6 +26,10 @@ e.g.
 - Supports copying the screenshot to clipboard (optional, due to browser API limitations，requires HTTPS environment, and always copies as PNG regardless of image type setting)
 - Show Toast notifications on success or failure of clipboard copy
 - Now supports more video player pages (like YouTube, bilibili, mux player ([#4](https://github.com/BakaChinatsu/plex-screenshot-helper/pull/4)), etc.), automatically using the current page title and timestamp as the filename
+- Filenames are sanitized (illegal characters replaced, over-long titles truncated) and empty segments are dropped instead of leaving `- - -` gaps
+- Picks the right `<video>` on pages that host several of them, preferring the one that is actually playing
+- Reports failures as on-page toasts, including a clear message when a frame cannot be read because of DRM or a cross-origin video source
+- Toasts stay visible in fullscreen playback
 
 - 直接从 Plex 播放器截取视频画面
 - 自动命名截图文件为 `[作品名] - [第几季·第几集]-[本集标题] - [时间戳].png`
@@ -35,6 +39,10 @@ e.g.
 - 支持复制截图到剪贴板(可选，由于浏览器 API 限制需要 HTTPS 环境，且无论图片类型设置如何都以 PNG 格式复制)
 - 复制至剪切板成功或失败时显示 Toast 提示
 - 现在支持更多视频播放器页面的截图（如 YouTube, bilibili, mux player ([#4](https://github.com/BakaChinatsu/plex-screenshot-helper/pull/4)) 等），会自动使用当前页面标题和时间戳作为文件名
+- 文件名会自动净化（替换非法字符、截断超长标题），缺失的字段整段省略，不再出现 `- - -` 这样的空档
+- 页面上有多个 `<video>` 时会挑选正在播放的那个，避免截到广告或预览画面
+- 失败时以页面 toast 说明原因，包括画面受 DRM 保护或视频源跨域导致无法读取像素的情况
+- 全屏播放时 toast 依然可见
 
 ## Tips / 使用提示
 
@@ -43,3 +51,15 @@ You can change the shortcut in Chrome extensions settings (access via `chrome://
 
 默认快捷键为 Alt+Shift+Z，MacOS 为 ⌥+⇧+Z<br>
 可以在 Chrome 扩展设置中更改快捷键 (访问 `chrome://extensions/shortcuts`)
+
+## Development / 开发
+
+```bash
+pnpm install
+pnpm dev              # Chrome
+pnpm dev:firefox      # Firefox
+pnpm test             # vitest, unit tests for the pure logic in utils/
+pnpm compile          # vue-tsc type check
+pnpm lint
+pnpm build            # or: pnpm build:firefox
+```

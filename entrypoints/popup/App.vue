@@ -1,137 +1,146 @@
 <script lang="ts" setup>
+import type { ImageType } from '@/utils/settings'
 import { storage } from '#imports'
-import { onMounted, ref, watch } from 'vue'
-import utils from '@/utils'
+import { computed, onMounted, ref, watch } from 'vue'
+import { captureScreenshot, getActiveTabId, readFilename } from '@/utils'
+import {
+  DEFAULT_SETTINGS,
+  loadSettings,
+  MAX_IMAGE_QUALITY,
+  MIN_IMAGE_QUALITY,
+  SUPPORTED_IMAGE_TYPES,
+} from '@/utils/settings'
+
+const IMAGE_TYPE_LABELS: Record<ImageType, string> = {
+  'image/png': 'PNG',
+  'image/jpeg': 'JPEG',
+  'image/webp': 'WEBP',
+}
 
 const shortcut = ref<string | null>(null)
-const copyToClipboard = ref(false)
-const imageType = ref<string>('image/png')
-const imageQuality = ref<string>('0.95')
+const copyToClipboard = ref(DEFAULT_SETTINGS.copyToClipboard)
+const imageType = ref<ImageType>(DEFAULT_SETTINGS.imageType)
+const imageQuality = ref<number>(DEFAULT_SETTINGS.imageQuality)
+const status = ref('')
+const busy = ref(false)
 
-async function getPlayInfo() {
-  console.log('开始获取播放信息')
-  const [tab] = await browser.tabs.query({
-    active: true,
-    currentWindow: true,
-  })
-  if (tab.id) {
-    const filename = await utils.getFilename(tab.id)
-    // eslint-disable-next-line no-alert
-    alert(`建议的文件名: ${filename}`)
+// 设置读回来之前不要把默认值写回存储
+const settingsLoaded = ref(false)
+
+// 质量参数只对有损格式有意义
+const qualityEnabled = computed(() => imageType.value !== 'image/png')
+
+async function withActiveTab(action: (tabId: number) => Promise<void>) {
+  const tabId = await getActiveTabId()
+  if (tabId === undefined) {
+    status.value = '没有找到当前标签页'
+    return
+  }
+  busy.value = true
+  try {
+    await action(tabId)
+  }
+  finally {
+    busy.value = false
   }
 }
 
-async function capture() {
-  console.log('开始截屏')
-  const [tab] = await browser.tabs.query({
-    active: true,
-    currentWindow: true,
+function showPlaybackInfo() {
+  return withActiveTab(async (tabId) => {
+    const result = await readFilename(tabId)
+    status.value = result.ok ? result.filename : result.message
   })
-  if (tab.id) {
-    const filename = await utils.getFilename(tab.id)
-    await utils.capture(tab.id, filename)
-  }
 }
 
-// 在组件挂载时获取快捷键和存储设置
+function capture() {
+  return withActiveTab(async (tabId) => {
+    status.value = '截图中…'
+    const ok = await captureScreenshot(tabId)
+    status.value = ok ? '已保存到下载目录' : '截图失败，详情见页面提示'
+  })
+}
+
 onMounted(async () => {
   try {
     const commands = await browser.commands.getAll()
-    const captureCommand = commands.find(
-      cmd => cmd.name === 'take_screenshot',
-    )
-    shortcut.value = captureCommand?.shortcut ?? null
+    shortcut.value = commands.find(cmd => cmd.name === 'take_screenshot')?.shortcut || null
   }
-  catch (e) {
-    console.error('获取快捷键失败:', e)
-    shortcut.value = '加载失败'
+  catch {
+    shortcut.value = null
   }
 
-  // 从存储中读取设置
-  copyToClipboard.value = await storage.getItem('local:copyToClipboard', {
-    fallback: false,
-  })
-  imageType.value = await storage.getItem('local:imageType', {
-    fallback: 'image/png',
-  })
-  imageQuality.value = String(await storage.getItem<number>('local:imageQuality', {
-    fallback: 1,
-  }))
+  const settings = await loadSettings()
+  copyToClipboard.value = settings.copyToClipboard
+  imageType.value = settings.imageType
+  imageQuality.value = settings.imageQuality
+  settingsLoaded.value = true
 })
 
-// 监听 copyToClipboard 的变化并保存到存储
-watch(copyToClipboard, async (newValue) => {
-  try {
-    await storage.setItem('local:copyToClipboard', newValue)
-    console.log('设置已保存:', newValue)
-  }
-  catch (e) {
-    console.error('保存设置失败:', e)
-  }
+watch(copyToClipboard, async (value) => {
+  if (settingsLoaded.value)
+    await storage.setItem('local:copyToClipboard', value)
 })
-// 监听 imageType 的变化并保存到存储
-watch(imageType, async (newValue) => {
-  try {
-    await storage.setItem('local:imageType', newValue)
-    console.log('图片类型已保存:', newValue)
-    // console.log('imageType.value:', imageType.value, typeof imageType.value)
-  }
-  catch (e) {
-    console.error('保存图片类型失败:', e)
-  }
+
+watch(imageType, async (value) => {
+  if (settingsLoaded.value)
+    await storage.setItem('local:imageType', value)
 })
-// 监听 imageQuality 的变化并保存到存储
-watch(imageQuality, async (newValue) => {
-  try {
-    console.log('imageQuality.value123:', newValue, typeof newValue)
-    await storage.setItem<number>('local:imageQuality', Number(newValue))
-    console.log('图片质量已保存:', newValue)
-  }
-  catch (e) {
-    console.error('保存图片质量失败:', e)
-  }
+
+watch(imageQuality, async (value) => {
+  if (settingsLoaded.value)
+    await storage.setItem<number>('local:imageQuality', Number(value))
 })
 </script>
 
 <template>
-  <h3>Plex Player 一键截图</h3>
-  <p>
-    <button @click="getPlayInfo">
-      获取播放信息
-    </button>
-  </p>
-  <p>
-    <button @click="capture">
-      截图并下载（{{ shortcut || "快捷键未设置" }}）
-    </button><br>
-    <input id="checkbox" v-model="copyToClipboard" type="checkbox">
-    <label for="checkbox">截图后复制至剪切板</label>
-  </p>
-  <p>Tip: 可以在 <code>chrome://extensions/shortcuts</code> 中更改快捷键</p>
-  <div>Image Type: {{ imageType }}</div>
+  <main>
+    <h1>Plex 一键截图</h1>
 
-  <input id="png" v-model="imageType" type="radio" value="image/png">
-  <label for="png">PNG</label>
-  <input id="jpeg" v-model="imageType" type="radio" value="image/jpeg">
-  <label for="jpeg">JPEG</label>
-  <input id="webp" v-model="imageType" type="radio" value="image/webp">
-  <label for="webp">WEBP</label>
+    <div class="actions">
+      <button type="button" :disabled="busy" @click="capture">
+        截图并下载
+      </button>
+      <button type="button" class="secondary" :disabled="busy" @click="showPlaybackInfo">
+        获取播放信息
+      </button>
+    </div>
 
-  <div>Image Quality: {{ imageQuality }}</div>
-  <input v-model="imageQuality" type="range" min="0" max="1" step="0.1">
+    <p class="shortcut">
+      快捷键：<kbd>{{ shortcut || "未设置" }}</kbd>
+      <span class="hint">可在 <code>chrome://extensions/shortcuts</code> 中修改</span>
+    </p>
+
+    <p v-if="status" class="status">
+      {{ status }}
+    </p>
+
+    <hr>
+
+    <label class="row">
+      <input v-model="copyToClipboard" type="checkbox">
+      <span>截图后复制到剪贴板<span class="hint">（需 HTTPS，始终以 PNG 复制）</span></span>
+    </label>
+
+    <fieldset>
+      <legend>图片格式</legend>
+      <label v-for="type in SUPPORTED_IMAGE_TYPES" :key="type" class="row">
+        <input v-model="imageType" type="radio" :value="type">
+        <span>{{ IMAGE_TYPE_LABELS[type] }}</span>
+      </label>
+    </fieldset>
+
+    <fieldset :disabled="!qualityEnabled">
+      <legend>
+        图片质量
+        <span class="hint">{{ qualityEnabled ? imageQuality.toFixed(2) : "PNG 无损，不适用" }}</span>
+      </legend>
+      <input
+        v-model.number="imageQuality"
+        type="range"
+        :min="MIN_IMAGE_QUALITY"
+        :max="MAX_IMAGE_QUALITY"
+        step="0.05"
+      >
+    </fieldset>
+  </main>
 </template>
-
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
-}
-</style>
