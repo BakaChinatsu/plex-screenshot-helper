@@ -3,8 +3,8 @@ import { defineConfig } from 'wxt'
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-vue'],
+  // MV3/MV2 由构建目标决定（--mv2/--mv3），不在 manifest 里写死
   manifest: {
-    manifest_version: 3,
     name: 'Plex Screenshot Helper',
     description: '一键截图并命名 Plex 画面',
     permissions: [
@@ -15,8 +15,8 @@ export default defineConfig({
     ],
     host_permissions: ['<all_urls>'],
 
+    // default_popup 由 entrypoints/popup 自动推导，这里只补充标题
     action: {
-      default_popup: 'popup/popup.html',
       default_title: 'Plex Screenshot Helper',
     },
 
@@ -25,12 +25,7 @@ export default defineConfig({
       type: 'module',
     },
 
-    // content_scripts: [
-    //   {
-    //     matches: ["<all_urls>"],
-    //     js: ["content.ts"],
-    //   },
-    // ],
+    // 没有常驻 content script：截图逻辑在用户触发时才用 scripting.executeScript 注入
 
     commands: {
       take_screenshot: {
