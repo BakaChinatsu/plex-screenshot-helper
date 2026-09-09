@@ -1,19 +1,12 @@
-import utils from '@/utils'
+import { captureScreenshot, getActiveTabId } from '@/utils'
 
 export default defineBackground(() => {
-  console.log('Hello background!', { id: browser.runtime.id })
   browser.commands.onCommand.addListener(async (command) => {
-    console.log(`Command "${command}" triggered`)
-    if (command === 'take_screenshot') {
-      const [tab] = await browser.tabs.query({
-        active: true,
-        currentWindow: true,
-      })
-      if (tab.id) {
-        const filename = await utils.getFilename(tab.id)
+    if (command !== 'take_screenshot')
+      return
 
-        await utils.capture(tab.id, filename)
-      }
-    }
+    const tabId = await getActiveTabId()
+    if (tabId !== undefined)
+      await captureScreenshot(tabId)
   })
 })
