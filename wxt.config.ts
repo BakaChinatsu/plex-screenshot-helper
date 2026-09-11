@@ -3,6 +3,13 @@ import { defineConfig } from 'wxt'
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   modules: ['@wxt-dev/module-vue'],
+
+  zip: {
+    // sources zip 是给 Firefox 审核复现构建用的，文档不是构建所需的源码。
+    // 另外 WXT 只认 .gitignore，不认 .git/info/exclude，未跟踪的本地文件也会被打进去。
+    excludeSources: ['docs/**'],
+  },
+
   // MV3/MV2 由构建目标决定（--mv2/--mv3），不在 manifest 里写死
   manifest: {
     name: 'Plex Screenshot Helper',
