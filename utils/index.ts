@@ -3,15 +3,18 @@ import type { Settings } from './settings'
 import { buildFilename, extensionForImageType } from './filename'
 import { captureFailureMessage, clipboardMessage } from './messages'
 import { loadSettings } from './settings'
+import { captureVisibleFrame } from './visible-frame'
 
 /**
  * 两次注入之间用来暂存已截画面的全局键，挂在扩展自己的 isolated world 上，
  * 页面脚本看不到，也不会和页面变量冲突。
  */
 const FRAME_KEY = '__plexScreenshotHelperFrame'
+const VIDEO_KEY = '__plexScreenshotHelperVideo'
+let capturing = false
 
 type ProbeResult
-  = | { ok: true, meta: VideoMetadata }
+  = | { ok: true, meta: VideoMetadata, drm: boolean, documentId?: string }
     | { ok: false, reason: string, detail?: string }
 
 type EmitResult
@@ -88,7 +91,7 @@ async function probePage(tabId: number, grabFrame: boolean): Promise<ProbeResult
   try {
     const [injection] = await browser.scripting.executeScript({
       target: { tabId },
-      func: (frameKey: string, shouldGrab: boolean) => {
+      func: (frameKey: string, videoKey: string, shouldGrab: boolean) => {
         function pickVideo(): HTMLVideoElement | null {
           const candidates = Array.from(document.querySelectorAll('video'))
 
@@ -125,8 +128,15 @@ async function probePage(tabId: number, grabFrame: boolean): Promise<ProbeResult
           currentTime: video.currentTime,
         }
 
+        const drm = !!video.mediaKeys
         if (!shouldGrab)
-          return { ok: true as const, meta }
+          return { ok: true as const, meta, drm }
+
+        const store = globalThis as unknown as Record<string, unknown>
+        if (drm) {
+          store[videoKey] = video
+          return { ok: true as const, meta, drm }
+        }
 
         try {
           const canvas = document.createElement('canvas')
@@ -143,9 +153,8 @@ async function probePage(tabId: number, grabFrame: boolean): Promise<ProbeResult
           // 而不是等到 toBlob 的异步回调里悄无声息地失败
           context.getImageData(0, 0, 1, 1)
 
-          const store = globalThis as unknown as Record<string, unknown>
           store[frameKey] = canvas
-          return { ok: true as const, meta }
+          return { ok: true as const, meta, drm }
         }
         catch (e) {
           return {
@@ -155,10 +164,13 @@ async function probePage(tabId: number, grabFrame: boolean): Promise<ProbeResult
           }
         }
       },
-      args: [FRAME_KEY, grabFrame],
+      args: [FRAME_KEY, VIDEO_KEY, grabFrame],
     })
 
-    return (injection?.result as ProbeResult | undefined) ?? { ok: false, reason: 'inject-failed' }
+    const result = injection?.result as ProbeResult | undefined
+    return result?.ok
+      ? { ...result, documentId: injection.documentId }
+      : result ?? { ok: false, reason: 'inject-failed' }
   }
   catch (e) {
     return { ok: false, reason: 'inject-failed', detail: describe(e) }
@@ -171,12 +183,13 @@ async function emitFrame(
   filename: string,
   settings: Settings,
   isChrome: boolean,
+  documentId?: string,
 ): Promise<EmitResult> {
   const downloadName = `${filename}.${extensionForImageType(settings.imageType)}`
 
   try {
     const [injection] = await browser.scripting.executeScript({
-      target: { tabId },
+      target: documentId ? { tabId, documentIds: [documentId] } : { tabId },
       func: (
         frameKey: string,
         name: string,
@@ -288,23 +301,41 @@ export async function readFilename(
 
 /** 截图 → 下载 →（可选）复制到剪贴板；过程中的成功/失败都以页面 toast 反馈。 */
 export async function captureScreenshot(tabId: number): Promise<boolean> {
-  const settings = await loadSettings()
+  return browser.runtime.sendMessage({ type: 'take-screenshot', tabId })
+}
 
-  const probe = await probePage(tabId, true)
-  if (!probe.ok) {
-    await notify(tabId, captureFailureMessage(probe.reason, probe.detail))
+export async function captureScreenshotInBackground(tabId: number): Promise<boolean> {
+  if (capturing)
+    return false
+  capturing = true
+  try {
+    const settings = await loadSettings()
+    const probe = await probePage(tabId, true)
+    if (!probe.ok) {
+      await notify(tabId, captureFailureMessage(probe.reason, probe.detail))
+      return false
+    }
+
+    if (probe.drm)
+      probe.meta.currentTime = await captureVisibleFrame(tabId, VIDEO_KEY, FRAME_KEY, probe.documentId)
+
+    const result = await emitFrame(tabId, buildFilename(probe.meta), settings, import.meta.env.CHROME, probe.documentId)
+    if (!result.ok) {
+      await notify(tabId, captureFailureMessage(result.reason, result.detail))
+      return false
+    }
+
+    const message = clipboardMessage(result.clipboard, result.detail)
+    if (message)
+      await notify(tabId, message)
+
+    return true
+  }
+  catch (error) {
+    await notify(tabId, captureFailureMessage('capture-failed', describe(error)))
     return false
   }
-
-  const result = await emitFrame(tabId, buildFilename(probe.meta), settings, import.meta.env.CHROME)
-  if (!result.ok) {
-    await notify(tabId, captureFailureMessage(result.reason, result.detail))
-    return false
+  finally {
+    capturing = false
   }
-
-  const message = clipboardMessage(result.clipboard, result.detail)
-  if (message)
-    await notify(tabId, message)
-
-  return true
 }
