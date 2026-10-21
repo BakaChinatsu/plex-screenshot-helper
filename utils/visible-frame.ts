@@ -6,7 +6,8 @@ interface VisibleFrameProbe {
   source: string
   bounds: { left: number, top: number, width: number, height: number }
   layout: VideoLayout
-  pageUrl: string
+  /** 截图前的播放状态，用来在截完之后把视频恢复原样。 */
+  wasPlaying: boolean
 }
 
 export async function captureVisibleFrame(
@@ -30,6 +31,8 @@ export async function captureVisibleFrame(
       if (window.visualViewport && window.visualViewport.scale !== 1)
         throw new Error('Reset pinch zoom before capturing the video.')
 
+      // 暂停是为了让画面静止下来，截完必须恢复，所以先记下原本的状态。
+      const wasPlaying = !video.paused
       video.pause()
       document.querySelector('#plex-screenshot-helper-toast')?.remove()
       await new Promise<void>((resolve) => {
@@ -67,18 +70,22 @@ export async function captureVisibleFrame(
           objectFit: style.objectFit,
           objectPosition: style.objectPosition,
         },
-        pageUrl: location.href,
+        wasPlaying,
       }
     },
     args: [videoKey],
   })
   if (!probe?.result)
     throw new Error('Could not inspect the video on this page.')
-  const { currentTime, layout, pageUrl } = probe.result
+  const { currentTime, layout } = probe.result
 
+  // 只比较标签页，不比较 URL。captureVisibleTab 截的是当前活动标签，
+  // 所以必须确认用户没有切走。而 URL 在 Plex 这类 SPA 里会随路由变化，
+  // 拿它做判断会误报；页面真的换掉时，下面那次注入的
+  // isConnected / currentSrc / currentTime 校验会拦住。
   async function checkActiveTab() {
     const [active] = await browser.tabs.query({ active: true, windowId: tab.windowId })
-    if (active?.id !== tabId || active.url !== pageUrl)
+    if (active?.id !== tabId)
       throw new Error('The active page changed. Return to the video and try again.')
   }
   await checkActiveTab()
@@ -96,32 +103,42 @@ export async function captureVisibleFrame(
       const store = globalThis as unknown as Record<string, unknown>
       const video = store[videoKey] as HTMLVideoElement
       delete store[videoKey]
-      if (!video?.isConnected || !video.paused || video.seeking
-        || video.currentSrc !== before.source || video.currentTime !== before.currentTime) {
-        throw new Error('The video changed while capturing. Please try again.')
-      }
 
-      const rect = video.getBoundingClientRect()
-      const style = getComputedStyle(video)
-      if (rect.left !== before.bounds.left || rect.top !== before.bounds.top
-        || rect.width !== before.bounds.width || rect.height !== before.bounds.height
-        || innerWidth !== before.layout.viewportWidth || innerHeight !== before.layout.viewportHeight
-        || style.objectFit !== before.layout.objectFit || style.objectPosition !== before.layout.objectPosition
-        || (window.visualViewport && window.visualViewport.scale !== 1)) {
-        throw new Error('The video position changed while capturing. Please try again.')
-      }
+      try {
+        if (!video?.isConnected || !video.paused || video.seeking
+          || video.currentSrc !== before.source || video.currentTime !== before.currentTime) {
+          throw new Error('The video changed while capturing. Please try again.')
+        }
 
-      const bitmap = await createImageBitmap(await (await fetch(screenshot)).blob())
-      const canvas = document.createElement('canvas')
-      canvas.width = crop.width
-      canvas.height = crop.height
-      const context = canvas.getContext('2d')
-      if (!context)
-        throw new Error('Could not create the screenshot canvas.')
-      context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height)
-      bitmap.close()
-      store[frameKey] = canvas
-      return true
+        const rect = video.getBoundingClientRect()
+        const style = getComputedStyle(video)
+        if (rect.left !== before.bounds.left || rect.top !== before.bounds.top
+          || rect.width !== before.bounds.width || rect.height !== before.bounds.height
+          || innerWidth !== before.layout.viewportWidth || innerHeight !== before.layout.viewportHeight
+          || style.objectFit !== before.layout.objectFit || style.objectPosition !== before.layout.objectPosition
+          || (window.visualViewport && window.visualViewport.scale !== 1)) {
+          throw new Error('The video position changed while capturing. Please try again.')
+        }
+
+        const bitmap = await createImageBitmap(await (await fetch(screenshot)).blob())
+        const canvas = document.createElement('canvas')
+        canvas.width = crop.width
+        canvas.height = crop.height
+        const context = canvas.getContext('2d')
+        if (!context)
+          throw new Error('Could not create the screenshot canvas.')
+        context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height)
+        bitmap.close()
+        store[frameKey] = canvas
+        return true
+      }
+      finally {
+        // 恢复播放排在所有校验和裁剪之后。提前恢复会让 currentTime 继续前进，
+        // 上面依赖它的校验就会误判成「截图期间视频变了」。
+        // 放在 finally 里是为了让失败路径也能恢复，否则截图失败还要留下一个停住的播放器。
+        if (before.wasPlaying && video?.isConnected)
+          void video.play().catch(() => {})
+      }
     },
     args: [videoKey, frameKey, screenshot, crop, probe.result],
   })
