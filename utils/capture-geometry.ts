@@ -20,7 +20,9 @@ export interface CaptureCrop {
 
 function positionOffset(value: string, space: number): number {
   const keywords: Record<string, number> = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 }
-  if (value in keywords)
+  // 用 hasOwn 而不是 in：`in` 会命中 Object.prototype 上的属性，
+  // 例如 'constructor'，那样会算出 NaN 并一路传播成无效的裁剪区域。
+  if (Object.hasOwn(keywords, value))
     return space * keywords[value]
   if (/^-?[\d.]+%$/.test(value))
     return space * Number.parseFloat(value) / 100

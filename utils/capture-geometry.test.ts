@@ -28,4 +28,9 @@ describe('getCaptureCrop', () => {
   it('rejects a player outside the viewport', () => {
     expect(() => getCaptureCrop({ ...layout, left: 1400 }, 1200, 800)).toThrow('Scroll')
   })
+
+  it('rejects an object-position that happens to name an Object.prototype property', () => {
+    expect(() => getCaptureCrop({ ...layout, objectPosition: 'constructor 50%' }, 1200, 800))
+      .toThrow('object-position')
+  })
 })
